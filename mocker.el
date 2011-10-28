@@ -118,7 +118,7 @@
 ;;; Mock record base object
 (defclass mocker-record-base ()
   ((min-occur :initarg :min-occur :initform 1 :type number)
-   (max-occur :initarg :max-occur :type (or null number))
+   (max-occur :initarg :max-occur)
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
    (-mock :initarg :-mock)
@@ -268,6 +268,12 @@
        (mocker-let ((foo () :records ((:output t))))
          (foo)))))
 
+(ert-deftest mocker-let-no-record ()
+  (should-error
+   (mocker-let ((foo () :records ()))
+     (foo))
+   :type 'mocker-mock-error))
+
 (ert-deftest mocker-let-multiple ()
   (should
    (eq 42
@@ -311,6 +317,31 @@
                                                :output t))))
      (foo 5))
    :type 'mocker-record-error))
+
+(ert-deftest mocker-let-multiple-output-generator ()
+  (should
+   (eq 2
+       (mocker-let ((foo (x)
+                         :records ((:input (2) :output-generator identity)
+                                   (:input (4) :output-generator
+                                           (lambda (x) 0)))))
+         (+ (foo 2) (foo 4))))))
+
+(ert-deftest mocker-let-multiple-calls-min ()
+  (should
+   (eq 4
+       (mocker-let ((foo (x)
+                         :records ((:input (2) :output-generator identity
+                                           :min-occur 2))))
+         (+ (foo 2) (foo 2))))))
+
+(ert-deftest mocker-let-multiple-calls-illimited ()
+  (should
+   (eq 8
+       (mocker-let ((foo (x)
+                         :records ((:input (2) :output-generator identity
+                                           :max-occur 4))))
+         (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
 (provide 'mocker)
 ;;; mocker.el ends here
