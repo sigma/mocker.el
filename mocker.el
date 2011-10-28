@@ -180,6 +180,14 @@
 (defclass mocker-stub-record (mocker-record-base)
   ((output :initarg :output :initform nil)))
 
+(defmethod constructor :static ((rec mocker-stub-record) newname &rest args)
+  (let* ((obj (call-next-method)))
+    (unless (slot-boundp obj :min-occur)
+      (oset obj :min-occur 0))
+    (unless (slot-boundp obj :max-occur)
+      (oset obj :max-occur nil))
+    obj))
+
 (defmethod mocker-test-record ((rec mocker-stub-record) args)
   t)
 
