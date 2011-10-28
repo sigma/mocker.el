@@ -189,31 +189,43 @@
 (defun mocker-gen-mocks (mockspecs)
   "helper to generate mocks from the input of `mocker-let'"
   (mapcar #'(lambda (m)
-              (apply 'make-instance 'mocker-mock
-                     :function (car m)
-                     :argspec (cadr m)
-                     (cddr m)))
+              (list (make-symbol (concat (symbol-name (car m))
+                                         "--mock"))
+                    (apply 'make-instance 'mocker-mock
+                           :function (car m)
+                           :argspec (cadr m)
+                           (cddr m))))
           mockspecs))
 
 ;;;###autoload
 (defmacro mocker-let (mockspecs &rest body)
   (declare (indent 1) (debug t))
   (let* ((mocks (mocker-gen-mocks mockspecs))
-         (specs (mapcar #'(lambda (m)
-                            (let ((func (oref m :function))
-                                  (spec (oref m :argspec)))
-                              (list func
-                                    spec
-                                    `(mocker-run ,m ,@spec))))
-                        mocks))
+         (specs (mapcar
+                 #'(lambda (m)
+                     (let* ((mock-sym (car m))
+                            (mock (cadr m))
+                            (func (oref mock :function))
+                            (spec (oref mock :argspec))
+                            (args (loop for el in spec
+                                        if (or (not (symbolp el))
+                                               (not (equal
+                                                     (elt (symbol-name el) 0)
+                                                     ?&)))
+                                        collect el)))
+                       (list func
+                             spec
+                             `(mocker-run ,mock-sym ,@args))))
+                 mocks))
          (verifs (mapcar #'(lambda (m)
-                             `(mocker-verify ,m))
+                             `(mocker-verify ,(car m)))
                          mocks)))
-    `(flet (,@specs)
-       (prog1
-           (progn
-             ,@body)
-         ,@verifs))))
+    `(let (,@mocks)
+       (flet (,@specs)
+         (prog1
+             (progn
+               ,@body)
+           ,@verifs)))))
 
 (provide 'mocker)
 ;;; mocker.el ends here
