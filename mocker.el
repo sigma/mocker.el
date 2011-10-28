@@ -33,6 +33,12 @@
 
 (defvar mocker-mock-default-record-cls 'mocker-record)
 
+(put 'mocker-mock-error 'error-conditions '(mocker-mock-error error))
+(put 'mocker-mock-error 'error-message "Mocker mock error")
+
+(put 'mocker-record-error 'error-conditions '(mocker-record-error error))
+(put 'mocker-record-error 'error-message "Mocker record error")
+
 ;;; Mock object
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
@@ -52,9 +58,10 @@
     obj))
 
 (defmethod mocker-fail-mock ((mock mocker-mock) args)
-  (error (format (concat "Unexpected call to mock `%s'"
-                         " with input `%s'")
-                 (oref mock :function) args)))
+  (signal 'mocker-mock-error
+          (list (format (concat "Unexpected call to mock `%s'"
+                                " with input `%s'")
+                        (oref mock :function) args))))
 
 (defmethod mocker-run ((mock mocker-mock) &rest args)
   (let ((rec (mocker-find-active-record mock args))
@@ -99,11 +106,13 @@
   (mapc #'(lambda (r) (when (and (oref r :-active)
                                  (< (oref r :-occurrences)
                                     (oref r :min-occur)))
-                        (error (format (concat "Expected call to mock `%s',"
+                        (signal 'mocker-record-error
+                                (list (format
+                                       (concat "Expected call to mock `%s',"
                                                " with input like %s,"
                                                " was not run.")
                                        (oref mock :function)
-                                       (mocker-get-record-expectations r)))))
+                                       (mocker-get-record-expectations r))))))
         (oref mock :records)))
 
 ;;; Mock record base object
@@ -146,11 +155,12 @@
 (defmethod mocker-get-record-expectations ((rec mocker-record-base)))
 
 (defmethod mocker-fail-record ((rec mocker-record-base) args)
-  (error (format (concat "Violated record while mocking `%s'."
-                         " Expected input like: %s, got: `%s' instead")
-                 (oref (oref rec :-mock) :function)
-                 (mocker-get-record-expectations rec)
-                 args)))
+  (signal 'mocker-record-error
+          (list (format (concat "Violated record while mocking `%s'."
+                                " Expected input like: %s, got: `%s' instead")
+                        (oref (oref rec :-mock) :function)
+                        (mocker-get-record-expectations rec)
+                        args))))
 
 ;;; Mock record default object
 (defclass mocker-record (mocker-record-base)
