@@ -251,5 +251,66 @@
                ,@body)
            ,@verifs)))))
 
+;;; Tests
+
+(eval-when-compile
+  (when (null (ignore-errors (require 'ert)))
+    (defmacro* ert-deftest (name () &body docstring-keys-and-body)
+      (message "Skipping tests, ERT is not available"))))
+
+(ert-deftest mocker-let-basic ()
+  (should
+   (eq t (mocker-let () t))))
+
+(ert-deftest mocker-let-single ()
+  (should
+   (eq t
+       (mocker-let ((foo () :records ((:output t))))
+         (foo)))))
+
+(ert-deftest mocker-let-multiple ()
+  (should
+   (eq 42
+       (mocker-let ((foo () :records ((:output 6)))
+                    (bar () :records ((:output 7))))
+         (* (foo) (bar))))))
+
+(ert-deftest mocker-let-nested ()
+  (should
+   (eq 42
+       (mocker-let ((foo () :records ((:output 6))))
+         (mocker-let ((bar () :records ((:output 7))))
+           (* (foo) (bar)))))))
+
+(ert-deftest mocker-let-multiple-inputs ()
+  (should
+   (eq 42
+       (mocker-let ((foo (x) :records ((:input (1) :output 6)))
+                    (bar (x) :records ((:input (2) :output 7))))
+         (* (foo 1) (bar 2))))))
+
+(ert-deftest mocker-let-multiple-inputs-invalid ()
+  (should-error
+   (mocker-let ((foo (x) :records ((:input (1) :output 6)))
+                (bar (x) :records ((:input (2) :output 7))))
+     (* (foo 2) (bar 2)))
+   :type 'mocker-record-error))
+
+(ert-deftest mocker-let-single-input-matcher ()
+  (should
+   (eq t
+       (mocker-let ((foo (x)
+                         :records ((:input-matcher (lambda (x) (evenp x))
+                                                   :output t))))
+         (foo 4)))))
+
+(ert-deftest mocker-let-single-input-matcher-invalid ()
+  (should-error
+   (mocker-let ((foo (x)
+                     :records ((:input-matcher (lambda (x) (evenp x))
+                                               :output t))))
+     (foo 5))
+   :type 'mocker-record-error))
+
 (provide 'mocker)
 ;;; mocker.el ends here
