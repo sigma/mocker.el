@@ -37,7 +37,7 @@
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
    (argspec :initarg :argspec :initform nil :type list)
-   (mode :initarg :mode :initform :ordered :type symbol)
+   (ordered :initarg :ordered :initform t)
    (records :initarg :records :initform nil :type list)
    (record-cls :initarg :record-cls :type symbol)))
 
@@ -58,7 +58,7 @@
 
 (defmethod mocker-run ((mock mocker-mock) &rest args)
   (let ((rec (mocker-find-active-record mock args))
-        (ordered (eq (oref mock :mode) :ordered)))
+        (ordered (oref mock :ordered)))
     (cond ((null rec)
            (mocker-fail-mock mock args))
           ((or (not ordered) (mocker-test-record rec args))
@@ -72,7 +72,7 @@
                         (while (and seq
                                     (not (setq x (funcall pred (pop seq))))))
                         x)))
-    (let* ((ordered (eq (oref mock :mode) :ordered))
+    (let* ((ordered (oref mock :ordered))
            rec)
       (if ordered
           (setq rec (first-match
