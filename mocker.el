@@ -41,7 +41,7 @@
 (defmethod constructor :static ((mock mocker-mock) newname &rest args)
   (let ((obj (call-next-method)))
     (unless (slot-boundp obj :record-cls)
-      (oset obj :record-cls mocker-default-record-cls))
+      (oset obj :record-cls mocker-mock-default-record-cls))
     (let ((cls (oref obj :record-cls)))
       (oset obj :records (mapcar #'(lambda (r)
                                      (apply 'make-instance cls :-mock obj r))
