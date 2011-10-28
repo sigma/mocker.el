@@ -3,7 +3,7 @@
 ;; Copyright (C) 2011  Yann Hodique.
 
 ;; Author: Yann Hodique <yann.hodique@gmail.com>
-;; Keywords:
+;; Keywords: lisp, testing
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -28,20 +28,24 @@
 
 (require 'eieio)
 
+(defvar mocker-mock-default-record-cls 'mocker-record)
+
 ;;; Mock object
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
    (argspec :initarg :argspec :initform nil :type list)
    (mode :initarg :mode :initform :ordered :type symbol)
    (records :initarg :records :initform nil :type list)
-   (record-cls :initarg :record-cls :initform 'mocker-record :type symbol)))
+   (record-cls :initarg :record-cls :type symbol)))
 
 (defmethod constructor :static ((mock mocker-mock) newname &rest args)
-  (let* ((obj (call-next-method))
-         (cls (oref obj :record-cls)))
-    (oset obj :records (mapcar #'(lambda (r)
-                                   (apply 'make-instance cls :-mock obj r))
-                               (oref obj :records)))
+  (let ((obj (call-next-method)))
+    (unless (slot-boundp obj :record-cls)
+      (oset obj :record-cls mocker-default-record-cls))
+    (let ((cls (oref obj :record-cls)))
+      (oset obj :records (mapcar #'(lambda (r)
+                                     (apply 'make-instance cls :-mock obj r))
+                                 (oref obj :records))))
     obj))
 
 (defmethod mocker-fail-mock ((mock mocker-mock) args)
