@@ -59,29 +59,36 @@
            (mocker-fail-record rec args)))))
 
 (defmethod mocker-find-active-record ((mock mocker-mock) args)
-  (let* ((ordered (eq (oref mock :mode) :ordered))
-         rec)
-    (if ordered
-        (setq rec (some #'(lambda (r)
-                            (when (oref r :-active)
-                              (if (mocker-test-record r args)
-                                  (progn
-                                    (mocker-use-record r)
-                                    r)
-                                (if (>= (oref r :-occurrences)
-                                        (oref r :min-occur))
-                                    (oset r :-active nil)
-                                  (mocker-fail-record r args)))))
-                        (oref mock :records)))
-      (setq rec (some #'(lambda (r)
-                          (and
-                           (mocker-is-active-record r)
-                           (mocker-test-record r args)
-                           (progn
-                             (mocker-use-record r)
-                             r)))
-                      (oref mock :records))))
-    rec))
+  (flet ((first-match (pred seq)
+                      (let ((x nil))
+                        (while (and seq
+                                    (not (setq x (funcall pred (pop seq))))))
+                        x)))
+    (let* ((ordered (eq (oref mock :mode) :ordered))
+           rec)
+      (if ordered
+          (setq rec (first-match
+                     #'(lambda (r)
+                         (when (oref r :-active)
+                           (if (mocker-test-record r args)
+                               (progn
+                                 (mocker-use-record r)
+                                 r)
+                             (if (>= (oref r :-occurrences)
+                                     (oref r :min-occur))
+                                 (oset r :-active nil)
+                               (mocker-fail-record r args)))))
+                     (oref mock :records)))
+        (setq rec (first-match
+                   #'(lambda (r)
+                       (and
+                        (mocker-is-active-record r)
+                        (mocker-test-record r args)
+                        (progn
+                          (mocker-use-record r)
+                          r)))
+                   (oref mock :records))))
+      rec)))
 
 (defmethod mocker-verify ((mock mocker-mock))
   (mapc #'(lambda (r) (when (and (oref r :-active)
