@@ -43,26 +43,57 @@
                                (oref obj :records)))
     obj))
 
-(defmethod mocker-fail-mock ((mock mocker-mock))
-  (error (format "Unexpected call to mock `%s'" (oref mock :function))))
+(defmethod mocker-fail-mock ((mock mocker-mock) args)
+  (error (format (concat "Unexpected call to mock `%s'"
+                         " with input `%s'")
+                 (oref mock :function) args)))
 
 (defmethod mocker-run ((mock mocker-mock) &rest args)
-  (let (rec
+  (let ((rec (mocker-find-active-record mock args))
         (ordered (eq (oref mock :mode) :ordered)))
-    (if ordered
-        (setq rec (some 'mocker-is-active-record
-                       (oref mock :records)))
-      (setq rec (some #'(lambda (r)
-                          (and
-                           (mocker-is-active-record r)
-                           (mocker-test-record rec args)))
-                      (oref mock :records))))
     (cond ((null rec)
-           (mocker-fail-mock mock))
-          ((and ordered (apply 'mocker-test-record rec args))
+           (mocker-fail-mock mock args))
+          ((or (not ordered) (mocker-test-record rec args))
            (apply 'mocker-run-record rec args))
           (t
            (mocker-fail-record rec args)))))
+
+(defmethod mocker-find-active-record ((mock mocker-mock) args)
+  (let* ((ordered (eq (oref mock :mode) :ordered))
+         rec)
+    (if ordered
+        (setq rec (some #'(lambda (r)
+                            (when (oref r :-active)
+                              (if (mocker-test-record r args)
+                                  (progn
+                                    (mocker-use-record r)
+                                    r)
+                                (if (>= (oref r :-occurrences)
+                                        (oref r :min-occur))
+                                    (oset r :-active nil)
+                                  (mocker-fail-record r args)))))
+                        (oref mock :records)))
+      (setq rec (some #'(lambda (r)
+                          (and
+                           (mocker-is-active-record r)
+                           (mocker-test-record r args)
+                           (progn
+                             (mocker-use-record r)
+                             r)))
+                      (oref mock :records))))
+    rec))
+
+(defmethod mocker-verify ((mock mocker-mock))
+  (mapc #'(lambda (r) (when (and (oref r :-active)
+                                 (< (oref r :-occurrences)
+                                    (oref r :min-occur)))
+                        (error (format (concat "Expected call to mock `%s'"
+                                               " with input matching `%s'"
+                                               " was not run.")
+                                       (oref mock :function)
+                                       (or (oref r :input-matcher)
+                                           (oref r :input))))))
+        (oref mock :records)))
 
 (defclass mocker-record ()
   ((input :initarg :input :initform nil :type list)
@@ -73,9 +104,10 @@
    (max-occur :initarg :max-occur :initform 1 :type number)
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
-   (-mock :initarg :-mock)))
+   (-mock :initarg :-mock)
+   (-active :initarg :-active :initform t :protection :protected)))
 
-(defmethod mocker-test-record ((rec mocker-record) &rest args)
+(defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
         (input (oref rec :input)))
     (cond (matcher
@@ -83,15 +115,15 @@
           (t
            (equal input args)))))
 
-(defmethod mocker-is-active-record ((rec mocker-record))
-  (let ((n (oref rec :max-occur)))
-    (and
-     (or (null n)
-         (> n (oref rec :-occurrences)))
-     rec)))
+(defmethod mocker-use-record ((rec mocker-record))
+  (let ((max (oref rec :max-occur))
+        (n (1+ (oref rec :-occurrences))))
+    (oset rec :-occurrences n)
+    (when (and (not (null max))
+               (= n max))
+      (oset rec :-active nil))))
 
 (defmethod mocker-run-record ((rec mocker-record) &rest args)
-  (oset rec :-occurrences (1+ (oref rec :-occurrences)))
   (let ((generator (oref rec :output-generator))
         (output (oref rec :output)))
     (cond (generator
@@ -101,7 +133,7 @@
 
 (defmethod mocker-fail-record ((rec mocker-record) args)
   (error (format (concat "Violated record while mocking `%s'."
-                         " Expected input matching:  `%s', got:  `%s' instead")
+                         " Expected input matching: `%s', got: `%s' instead")
                  (oref (oref rec :-mock) :function)
                  (or (oref rec :input-matcher) (oref rec :input))
                  args)))
@@ -123,9 +155,15 @@
                               (list func
                                     spec
                                     `(mocker-run ,m ,@spec))))
-                        mocks)))
+                        mocks))
+         (verifs (mapcar #'(lambda (m)
+                             `(mocker-verify ,m))
+                         mocks)))
     `(flet (,@specs)
-       ,@body)))
+       (prog1
+           (progn
+             ,@body)
+         ,@verifs))))
 
 (provide 'mocker)
 ;;; mocker.el ends here
