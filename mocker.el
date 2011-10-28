@@ -99,12 +99,11 @@
   (mapc #'(lambda (r) (when (and (oref r :-active)
                                  (< (oref r :-occurrences)
                                     (oref r :min-occur)))
-                        (error (format (concat "Expected call to mock `%s'"
-                                               " with input matching `%s'"
+                        (error (format (concat "Expected call to mock `%s',"
+                                               " with input like %s,"
                                                " was not run.")
                                        (oref mock :function)
-                                       (or (oref r :input-matcher)
-                                           (oref r :input))))))
+                                       (mocker-get-record-expectations r)))))
         (oref mock :records)))
 
 ;;; Mock record base object
@@ -148,7 +147,7 @@
 
 (defmethod mocker-fail-record ((rec mocker-record-base) args)
   (error (format (concat "Violated record while mocking `%s'."
-                         " Expected input like: `%s', got: `%s' instead")
+                         " Expected input like: %s, got: `%s' instead")
                  (oref (oref rec :-mock) :function)
                  (mocker-get-record-expectations rec)
                  args)))
@@ -177,7 +176,7 @@
            output))))
 
 (defmethod mocker-get-record-expectations ((rec mocker-record))
-  (or (oref rec :input-matcher) (oref rec :input)))
+  (format "`%s'" (or (oref rec :input-matcher) (oref rec :input))))
 
 ;;; Mock simple stub object
 (defclass mocker-stub-record (mocker-record-base)
@@ -197,6 +196,10 @@
 (defmethod mocker-run-record ((rec mocker-stub-record) args)
   (oref rec :output))
 
+(defmethod mocker-get-record-expectations ((rec mocker-stub-record))
+  "anything")
+
+;;; Helpers
 (defun mocker-gen-mocks (mockspecs)
   "helper to generate mocks from the input of `mocker-let'"
   (mapcar #'(lambda (m)
