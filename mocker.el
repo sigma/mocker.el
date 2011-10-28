@@ -39,12 +39,12 @@
   (let* ((obj (call-next-method))
          (cls (oref obj :record-cls)))
     (oset obj :records (mapcar #'(lambda (r)
-                                   (apply 'make-instance cls r))
+                                   (apply 'make-instance cls :-mock obj r))
                                (oref obj :records)))
     obj))
 
 (defmethod mocker-fail-mock ((mock mocker-mock))
-  (error "invalid mock"))
+  (error (format "Unexpected call to mock `%s'" (oref mock :function))))
 
 (defmethod mocker-run ((mock mocker-mock) &rest args)
   (let (rec
@@ -62,7 +62,7 @@
           ((and ordered (apply 'mocker-test-record rec args))
            (apply 'mocker-run-record rec args))
           (t
-           (mocker-fail-record rec)))))
+           (mocker-fail-record rec args)))))
 
 (defclass mocker-record ()
   ((input :initarg :input :initform nil :type list)
@@ -72,7 +72,8 @@
    (min-occur :initarg :min-occur :initform 1 :type number)
    (max-occur :initarg :max-occur :initform 1 :type number)
    (-occurrences :initarg :-occurrences :initform 0 :type number
-                 :protection :protected)))
+                 :protection :protected)
+   (-mock :initarg :-mock)))
 
 (defmethod mocker-test-record ((rec mocker-record) &rest args)
   (let ((matcher (oref rec :input-matcher))
@@ -98,8 +99,12 @@
           (t
            output))))
 
-(defmethod mocker-fail-record ((rec mocker-record))
-  (error "invalid record"))
+(defmethod mocker-fail-record ((rec mocker-record) args)
+  (error (format (concat "Violated record while mocking `%s'."
+                         " Expected input matching:  `%s', got:  `%s' instead")
+                 (oref (oref rec :-mock) :function)
+                 (or (oref rec :input-matcher) (oref rec :input))
+                 args)))
 
 (defun mocker-gen-mocks (mockspecs)
   (mapcar #'(lambda (m)
