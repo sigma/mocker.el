@@ -28,6 +28,7 @@
 
 (require 'eieio)
 
+;;; Mock object
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
    (argspec :initarg :argspec :initform nil :type list)
@@ -74,15 +75,12 @@
                                (progn
                                  (mocker-use-record r)
                                  r)
-                             (if (>= (oref r :-occurrences)
-                                     (oref r :min-occur))
-                                 (oset r :-active nil)
-                               (mocker-fail-record r args)))))
+                             (mocker-skip-record r args))))
                      (oref mock :records)))
         (setq rec (first-match
                    #'(lambda (r)
                        (and
-                        (mocker-is-active-record r)
+                        (oref r :-active)
                         (mocker-test-record r args)
                         (progn
                           (mocker-use-record r)
@@ -102,25 +100,43 @@
                                            (oref r :input))))))
         (oref mock :records)))
 
-(defclass mocker-record ()
-  ((input :initarg :input :initform nil :type list)
-   (output :initarg :output :initform nil)
-   (input-matcher :initarg :input-matcher :initform nil)
-   (output-generator :initarg :output-generator :initform nil)
-   (min-occur :initarg :min-occur :initform 1 :type number)
+;;; Mock record base object
+(defclass mocker-record-base ()
+  ((min-occur :initarg :min-occur :initform 1 :type number)
    (max-occur :initarg :max-occur :type (or null number))
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
    (-mock :initarg :-mock)
    (-active :initarg :-active :initform t :protection :protected)))
 
-(defmethod constructor :static ((rec mocker-record) newname &rest args)
+(defmethod constructor :static ((rec mocker-record-base) newname &rest args)
   (let* ((obj (call-next-method)))
     (when (or (not (slot-boundp obj :max-occur))
               (< (oref obj :max-occur)
                  (oref obj :min-occur)))
       (oset obj :max-occur (oref obj :min-occur)))
     obj))
+
+(defmethod mocker-use-record ((rec mocker-record-base))
+  (let ((max (oref rec :max-occur))
+        (n (1+ (oref rec :-occurrences))))
+    (oset rec :-occurrences n)
+    (when (and (not (null max))
+               (= n max))
+      (oset rec :-active nil))))
+
+(defmethod mocker-skip-record ((rec mocker-record-base) args)
+  (if (>= (oref rec :-occurrences)
+          (oref rec :min-occur))
+      (oset rec :-active nil)
+    (mocker-fail-record rec args)))
+
+;;; Mock record default object
+(defclass mocker-record (mocker-record-base)
+  ((input :initarg :input :initform nil :type list)
+   (output :initarg :output :initform nil)
+   (input-matcher :initarg :input-matcher :initform nil)
+   (output-generator :initarg :output-generator :initform nil)))
 
 (defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
@@ -129,14 +145,6 @@
            (apply matcher args))
           (t
            (equal input args)))))
-
-(defmethod mocker-use-record ((rec mocker-record))
-  (let ((max (oref rec :max-occur))
-        (n (1+ (oref rec :-occurrences))))
-    (oset rec :-occurrences n)
-    (when (and (not (null max))
-               (= n max))
-      (oset rec :-active nil))))
 
 (defmethod mocker-run-record ((rec mocker-record) &rest args)
   (let ((generator (oref rec :output-generator))
@@ -154,6 +162,7 @@
                  args)))
 
 (defun mocker-gen-mocks (mockspecs)
+  "helper to generate mocks from the input of `mocker-let'"
   (mapcar #'(lambda (m)
               (apply 'make-instance 'mocker-mock
                      :function (car m)
@@ -161,6 +170,7 @@
                      (cddr m)))
           mockspecs))
 
+;;;###autoload
 (defmacro mocker-let (mockspecs &rest body)
   (declare (indent 1) (debug t))
   (let* ((mocks (mocker-gen-mocks mockspecs))
