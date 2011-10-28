@@ -59,7 +59,7 @@
     (cond ((null rec)
            (mocker-fail-mock mock args))
           ((or (not ordered) (mocker-test-record rec args))
-           (apply 'mocker-run-record rec args))
+           (mocker-run-record rec args))
           (t
            (mocker-fail-record rec args)))))
 
@@ -135,6 +135,21 @@
       (oset rec :-active nil)
     (mocker-fail-record rec args)))
 
+(defmethod mocker-test-record ((rec mocker-record-base) args)
+  (error "not implemented in base class"))
+
+(defmethod mocker-run-record ((rec mocker-record-base) args)
+  (error "not implemented in base class"))
+
+(defmethod mocker-get-record-expectations ((rec mocker-record-base)))
+
+(defmethod mocker-fail-record ((rec mocker-record-base) args)
+  (error (format (concat "Violated record while mocking `%s'."
+                         " Expected input like: `%s', got: `%s' instead")
+                 (oref (oref rec :-mock) :function)
+                 (mocker-get-record-expectations rec)
+                 args)))
+
 ;;; Mock record default object
 (defclass mocker-record (mocker-record-base)
   ((input :initarg :input :initform nil :type list)
@@ -150,7 +165,7 @@
           (t
            (equal input args)))))
 
-(defmethod mocker-run-record ((rec mocker-record) &rest args)
+(defmethod mocker-run-record ((rec mocker-record) args)
   (let ((generator (oref rec :output-generator))
         (output (oref rec :output)))
     (cond (generator
@@ -158,12 +173,18 @@
           (t
            output))))
 
-(defmethod mocker-fail-record ((rec mocker-record) args)
-  (error (format (concat "Violated record while mocking `%s'."
-                         " Expected input matching: `%s', got: `%s' instead")
-                 (oref (oref rec :-mock) :function)
-                 (or (oref rec :input-matcher) (oref rec :input))
-                 args)))
+(defmethod mocker-get-record-expectations ((rec mocker-record))
+  (or (oref rec :input-matcher) (oref rec :input)))
+
+;;; Mock simple stub object
+(defclass mocker-stub-record (mocker-record-base)
+  ((output :initarg :output :initform nil)))
+
+(defmethod mocker-test-record ((rec mocker-stub-record) args)
+  t)
+
+(defmethod mocker-run-record ((rec mocker-stub-record) args)
+  (oref rec :output))
 
 (defun mocker-gen-mocks (mockspecs)
   "helper to generate mocks from the input of `mocker-let'"
