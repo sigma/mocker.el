@@ -101,11 +101,19 @@
    (input-matcher :initarg :input-matcher :initform nil)
    (output-generator :initarg :output-generator :initform nil)
    (min-occur :initarg :min-occur :initform 1 :type number)
-   (max-occur :initarg :max-occur :initform 1 :type number)
+   (max-occur :initarg :max-occur :type (or null number))
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
    (-mock :initarg :-mock)
    (-active :initarg :-active :initform t :protection :protected)))
+
+(defmethod constructor :static ((rec mocker-record) newname &rest args)
+  (let* ((obj (call-next-method)))
+    (when (or (not (slot-boundp obj :max-occur))
+              (< (oref obj :max-occur)
+                 (oref obj :min-occur)))
+      (oset obj :max-occur (oref obj :min-occur)))
+    obj))
 
 (defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
