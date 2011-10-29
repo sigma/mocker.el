@@ -118,5 +118,38 @@
                                            :max-occur nil))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
+(ert-deftest mocker-let-multiple-calls-multiple-records ()
+  (should
+   (eq 12
+       (mocker-let ((foo (x)
+                         :records ((:input (2) :output-generator identity
+                                           :max-occur 2)
+                                   (:input (2) :output-generator
+                                           (lambda (x) (* 2 x))
+                                           :max-occur 2))))
+         (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
+
+(ert-deftest mocker-let-multiple-calls-unexpected ()
+  (should-error
+   (mocker-let ((foo (x)
+                     :records ((:input (2) :output-generator identity
+                                       :max-occur 2))))
+     (+ (foo 2) (foo 2) (foo 2) (foo 2))))
+  :type 'mocker-record-error)
+
+(ert-deftest mocker-let-stub-simple ()
+  (should
+   (let ((mocker-mock-default-record-cls 'mocker-stub-record))
+     (eq t
+         (mocker-let ((foo (x) :records ((:output t))))
+           (and (foo 1) (foo 42) (foo 666)))))))
+
+(ert-deftest mocker-let-stub-limited ()
+  (should-error
+   (let ((mocker-mock-default-record-cls 'mocker-stub-record))
+     (mocker-let ((foo (x) :records ((:output t :max-occur 2))))
+       (and (foo 1) (foo 42) (foo 666))))
+   :type 'mocker-mock-error))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here

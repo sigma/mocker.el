@@ -124,15 +124,6 @@
    (-mock :initarg :-mock)
    (-active :initarg :-active :initform t :protection :protected)))
 
-(defmethod constructor :static ((rec mocker-record-base) newname &rest args)
-  (let* ((obj (call-next-method)))
-    (when (or (not (slot-boundp obj :max-occur))
-              (and (oref obj :max-occur)
-                   (< (oref obj :max-occur)
-                      (oref obj :min-occur))))
-      (oset obj :max-occur (oref obj :min-occur)))
-    obj))
-
 (defmethod mocker-use-record ((rec mocker-record-base))
   (let ((max (oref rec :max-occur))
         (n (1+ (oref rec :-occurrences))))
@@ -169,6 +160,15 @@
    (output :initarg :output :initform nil)
    (input-matcher :initarg :input-matcher :initform nil)
    (output-generator :initarg :output-generator :initform nil)))
+
+(defmethod constructor :static ((rec mocker-record) newname &rest args)
+  (let* ((obj (call-next-method)))
+    (when (or (not (slot-boundp obj :max-occur))
+              (and (oref obj :max-occur)
+                   (< (oref obj :max-occur)
+                      (oref obj :min-occur))))
+      (oset obj :max-occur (oref obj :min-occur)))
+    obj))
 
 (defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
