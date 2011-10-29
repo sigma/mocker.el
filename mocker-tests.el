@@ -115,7 +115,7 @@
    (eq 8
        (mocker-let ((foo (x)
                          :records ((:input (2) :output-generator identity
-                                           :max-occur 4))))
+                                           :max-occur nil))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
 (provide 'mocker-tests)

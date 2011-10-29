@@ -118,7 +118,7 @@
 ;;; Mock record base object
 (defclass mocker-record-base ()
   ((min-occur :initarg :min-occur :initform 1 :type number)
-   (max-occur :initarg :max-occur)
+   (max-occur :initarg :max-occur :type (or null number))
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
    (-mock :initarg :-mock)
@@ -127,8 +127,9 @@
 (defmethod constructor :static ((rec mocker-record-base) newname &rest args)
   (let* ((obj (call-next-method)))
     (when (or (not (slot-boundp obj :max-occur))
-              (< (oref obj :max-occur)
-                 (oref obj :min-occur)))
+              (and (oref obj :max-occur)
+                   (< (oref obj :max-occur)
+                      (oref obj :min-occur))))
       (oset obj :max-occur (oref obj :min-occur)))
     obj))
 
