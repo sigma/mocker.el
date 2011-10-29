@@ -44,18 +44,24 @@
   ((function :initarg :function :type symbol)
    (argspec :initarg :argspec :initform nil :type list)
    (ordered :initarg :ordered :initform t)
-   (records :initarg :records :initform nil :type list)
-   (record-cls :initarg :record-cls :type symbol)))
+   (records :initarg :records :initform nil :type list)))
 
 (defmethod constructor :static ((mock mocker-mock) newname &rest args)
-  (let ((obj (call-next-method)))
-    (unless (slot-boundp obj :record-cls)
-      (oset obj :record-cls mocker-mock-default-record-cls))
-    (let ((cls (oref obj :record-cls)))
+  (flet ((plist-remove (plist key)
+                       (if (eq (car plist) key) (cdr (cdr plist))
+                         (cons (car plist)
+                               (cons (cadr plist)
+                                     (plist-remove (cddr plist) key))))))
+    (let ((obj (call-next-method)))
       (oset obj :records (mapcar #'(lambda (r)
-                                     (apply 'make-instance cls :-mock obj r))
-                                 (oref obj :records))))
-    obj))
+                                     (let ((cls mocker-mock-default-record-cls)
+                                           (tmp (plist-get r :record-cls)))
+                                       (when tmp
+                                         (setq cls tmp
+                                               r (plist-remove r :record-cls)))
+                                       (apply 'make-instance cls :-mock obj r)))
+                                 (oref obj :records)))
+      obj)))
 
 (defmethod mocker-fail-mock ((mock mocker-mock) args)
   (signal 'mocker-mock-error

@@ -144,6 +144,13 @@
          (mocker-let ((foo (x) :records ((:output t))))
            (and (foo 1) (foo 42) (foo 666)))))))
 
+(ert-deftest mocker-let-stub-simple-explicit ()
+  (should
+   (eq t
+       (mocker-let ((foo (x) :records ((:record-cls mocker-stub-record
+                                                    :output t))))
+         (and (foo 1) (foo 42) (foo 666))))))
+
 (ert-deftest mocker-let-stub-limited ()
   (should-error
    (let ((mocker-mock-default-record-cls 'mocker-stub-record))
