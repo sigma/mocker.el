@@ -142,9 +142,7 @@
    (-active :initarg :-active :initform t :protection :protected)))
 
 (defmethod mocker-read-record :static ((rec mocker-record-base) spec)
-  spec
-  ;; (eval (cons 'list spec))
-  )
+  spec)
 
 (defmethod mocker-use-record ((rec mocker-record-base))
   (let ((max (oref rec :max-occur))
@@ -191,14 +189,6 @@
                       (oref obj :min-occur))))
       (oset obj :max-occur (oref obj :min-occur)))
     obj))
-
-;; (defmethod mocker-read-record :before ((rec mocker-record) spec)
-;;   (when (plist-member spec :input-matcher)
-;;     (plist-put spec :input-matcher
-;;                (function (plist-get spec :input-matcher))))
-;;   (when (plist-member spec :output-generator)
-;;     (plist-put spec :output-generator
-;;                (function (plist-get spec :output-generator)))))
 
 (defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
