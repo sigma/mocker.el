@@ -256,6 +256,26 @@
 
 ;;;###autoload
 (defmacro mocker-let (mockspecs &rest body)
+  "Generate temporary bindings according to MOCKSPECS then eval
+BODY. The value of the last form in BODY is returned.
+Each element of MOCKSPECS is a list (FUNC ARGS [OPTIONS]
+RECORDS).
+
+FUNC is the name of the function to bind, whose original
+ definition must accept arguments compatible with ARGS.
+OPTIONS can be :ordered nil if the records can be executed out of
+order (by default, order is enforced).
+RECORDS is a list ([:record-cls CLASS] ARG1 ARG2...).
+
+Each element of RECORDS will generate a record for the
+corresponding mock. By default, records are objects of the
+`mocker-record' class, but CLASS is used instead if specified.
+The rest of the arguments are used to construct the record
+object. They will be passed to method `mocker-read-record' for
+the used CLASS. This method must return a valid list of
+parameters for the CLASS constructor. This allows to implement
+specialized mini-languages for specific record classes.
+"
   (declare (indent 1) (debug t))
   (let* ((mocks (mocker-gen-mocks mockspecs))
          (vars (mapcar #'(lambda (m)
