@@ -39,6 +39,13 @@
 (put 'mocker-record-error 'error-conditions '(mocker-record-error error))
 (put 'mocker-record-error 'error-message "Mocker record error")
 
+(defun mocker--plist-remove (plist key)
+  ;; courtesy of pjb
+  (if (eq (car plist) key) (cdr (cdr plist))
+    (cons (car plist)
+          (cons (cadr plist)
+                (mocker--plist-remove (cddr plist) key)))))
+
 ;;; Mock object
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
@@ -47,21 +54,25 @@
    (records :initarg :records :initform nil :type list)))
 
 (defmethod constructor :static ((mock mocker-mock) newname &rest args)
-  (flet ((plist-remove (plist key)
-                       (if (eq (car plist) key) (cdr (cdr plist))
-                         (cons (car plist)
-                               (cons (cadr plist)
-                                     (plist-remove (cddr plist) key))))))
-    (let ((obj (call-next-method)))
-      (oset obj :records (mapcar #'(lambda (r)
-                                     (let ((cls mocker-mock-default-record-cls)
-                                           (tmp (plist-get r :record-cls)))
-                                       (when tmp
-                                         (setq cls tmp
-                                               r (plist-remove r :record-cls)))
-                                       (apply 'make-instance cls :-mock obj r)))
-                                 (oref obj :records)))
-      obj)))
+  (let* ((obj (call-next-method))
+         (recs (oref obj :records)))
+    (oset obj :records nil)
+    (mapc #'(lambda (r)
+              (apply 'mocker-add-record obj r))
+          recs)
+    obj))
+
+(defmethod mocker-add-record ((mock mocker-mock) &rest args)
+  (object-add-to-list mock :records
+                      (let ((cls mocker-mock-default-record-cls)
+                            (tmp (plist-get args :record-cls)))
+                        (when tmp
+                          (setq cls tmp
+                                args (mocker-read-record cls
+                                                         (mocker--plist-remove
+                                                          args :record-cls))))
+                        (apply 'make-instance cls :-mock mock args))
+                      t))
 
 (defmethod mocker-fail-mock ((mock mocker-mock) args)
   (signal 'mocker-mock-error
@@ -130,6 +141,11 @@
    (-mock :initarg :-mock)
    (-active :initarg :-active :initform t :protection :protected)))
 
+(defmethod mocker-read-record :static ((rec mocker-record-base) spec)
+  spec
+  ;; (eval (cons 'list spec))
+  )
+
 (defmethod mocker-use-record ((rec mocker-record-base))
   (let ((max (oref rec :max-occur))
         (n (1+ (oref rec :-occurrences))))
@@ -176,6 +192,14 @@
       (oset obj :max-occur (oref obj :min-occur)))
     obj))
 
+;; (defmethod mocker-read-record :before ((rec mocker-record) spec)
+;;   (when (plist-member spec :input-matcher)
+;;     (plist-put spec :input-matcher
+;;                (function (plist-get spec :input-matcher))))
+;;   (when (plist-member spec :output-generator)
+;;     (plist-put spec :output-generator
+;;                (function (plist-get spec :output-generator)))))
+
 (defmethod mocker-test-record ((rec mocker-record) args)
   (let ((matcher (oref rec :input-matcher))
         (input (oref rec :input)))
@@ -220,18 +244,33 @@
 (defun mocker-gen-mocks (mockspecs)
   "helper to generate mocks from the input of `mocker-let'"
   (mapcar #'(lambda (m)
-              (list (make-symbol (concat (symbol-name (car m))
-                                         "--mock"))
-                    (apply 'make-instance 'mocker-mock
-                           :function (car m)
-                           :argspec (cadr m)
-                           (cddr m))))
+              (let ((func (car m))
+                    (argspec (cadr m))
+                    (rest (cddr m)))
+                (list (make-symbol (concat (symbol-name func) "--mock"))
+                      (apply 'make-instance 'mocker-mock
+                             :function func
+                             :argspec argspec
+                             (let* ((order (if (plist-member rest :ordered)
+                                               (prog1
+                                                   (plist-get rest :ordered)
+                                                 (mocker--plist-remove
+                                                  rest :ordered))
+                                             (oref-default 'mocker-mock
+                                                           :ordered))))
+                               (list :ordered order)))
+                      (if (plist-member rest :records)
+                          (plist-get rest :records)
+                        (car rest)))))
           mockspecs))
 
 ;;;###autoload
 (defmacro mocker-let (mockspecs &rest body)
   (declare (indent 1) (debug t))
   (let* ((mocks (mocker-gen-mocks mockspecs))
+         (vars (mapcar #'(lambda (m)
+                           `(,(car m) ,(cadr m)))
+                       mocks))
          (specs (mapcar
                  #'(lambda (m)
                      (let* ((mock-sym (car m))
@@ -248,11 +287,19 @@
                              spec
                              `(mocker-run ,mock-sym ,@args))))
                  mocks))
+         (inits (mapcar #'(lambda (m)
+                            (cons 'progn
+                                  (mapcar #'(lambda (rec)
+                                              `(mocker-add-record ,(car m)
+                                                              ,@rec))
+                                          (nth 2 m))))
+                        mocks))
          (verifs (mapcar #'(lambda (m)
                              `(mocker-verify ,(car m)))
                          mocks)))
-    `(let (,@mocks)
+    `(let (,@vars)
        (flet (,@specs)
+         ,@inits
          (prog1
              (progn
                ,@body)

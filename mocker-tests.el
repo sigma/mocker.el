@@ -43,6 +43,13 @@
        (mocker-let ((foo () :records ((:output t))))
          (foo)))))
 
+(ert-deftest mocker-let-single-implicit-records ()
+  (should
+   (eq t
+       (mocker-let ((foo ()
+                         ((:output t))))
+         (foo)))))
+
 (ert-deftest mocker-let-no-record ()
   (should-error
    (mocker-let ((foo () :records ()))
@@ -66,14 +73,14 @@
 (ert-deftest mocker-let-multiple-inputs ()
   (should
    (eq 42
-       (mocker-let ((foo (x) :records ((:input (1) :output 6)))
-                    (bar (x) :records ((:input (2) :output 7))))
+       (mocker-let ((foo (x) :records ((:input '(1) :output 6)))
+                    (bar (x) :records ((:input '(2) :output 7))))
          (* (foo 1) (bar 2))))))
 
 (ert-deftest mocker-let-multiple-inputs-invalid ()
   (should-error
-   (mocker-let ((foo (x) :records ((:input (1) :output 6)))
-                (bar (x) :records ((:input (2) :output 7))))
+   (mocker-let ((foo (x) :records ((:input '(1) :output 6)))
+                (bar (x) :records ((:input '(2) :output 7))))
      (* (foo 2) (bar 2)))
    :type 'mocker-record-error))
 
@@ -97,43 +104,48 @@
   (should
    (eq 2
        (mocker-let ((foo (x)
-                         :records ((:input (2) :output-generator identity)
-                                   (:input (4) :output-generator
-                                           (lambda (x) 0)))))
+                         :records ((:input '(2)
+                                    :output-generator (function identity))
+                                   (:input '(4)
+                                    :output-generator (lambda (x) 0)))))
          (+ (foo 2) (foo 4))))))
 
 (ert-deftest mocker-let-multiple-calls-min ()
   (should
    (eq 4
        (mocker-let ((foo (x)
-                         :records ((:input (2) :output-generator identity
-                                           :min-occur 2))))
+                         :records ((:input '(2)
+                                    :output-generator (function identity)
+                                    :min-occur 2))))
          (+ (foo 2) (foo 2))))))
 
 (ert-deftest mocker-let-multiple-calls-illimited ()
   (should
    (eq 8
        (mocker-let ((foo (x)
-                         :records ((:input (2) :output-generator identity
-                                           :max-occur nil))))
+                         :records ((:input '(2)
+                                    :output-generator (function identity)
+                                    :max-occur nil))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
 (ert-deftest mocker-let-multiple-calls-multiple-records ()
   (should
    (eq 12
        (mocker-let ((foo (x)
-                         :records ((:input (2) :output-generator identity
-                                           :max-occur 2)
-                                   (:input (2) :output-generator
-                                           (lambda (x) (* 2 x))
-                                           :max-occur 2))))
+                         :records ((:input '(2)
+                                    :output-generator (function identity)
+                                    :max-occur 2)
+                                   (:input '(2)
+                                    :output-generator (lambda (x) (* 2 x))
+                                    :max-occur 2))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
 (ert-deftest mocker-let-multiple-calls-unexpected ()
   (should-error
    (mocker-let ((foo (x)
-                     :records ((:input (2) :output-generator identity
-                                       :max-occur 2))))
+                     :records ((:input '(2)
+                                :output-generator (function identity)
+                                :max-occur 2))))
      (+ (foo 2) (foo 2) (foo 2) (foo 2))))
   :type 'mocker-record-error)
 
