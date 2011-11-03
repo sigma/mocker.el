@@ -26,6 +26,39 @@ By default, the order of definition within a mock has to be respected by the
 wrapped code, so that in this situation it would be an error to observe `(foo
 4 5 6)` before `(foo 1 2 3)`.
 
+```lisp
+(mocker-let ((foo (x y z)
+                  ((:input '(1 2 3) :output 4)
+                   (:input '(4 5 6) :output 10)))
+             (bar (x)
+                  ((:input '(42) :output 4))))
+  (+ (foo 4 5 6)
+     (foo 1 2 3)
+     (bar 42)))
+```
+
+In such a situation, you'll get a typed error with a message like
+```
+(mocker-record-error "Violated record while mocking `foo'. Expected input like: `(1 2 3)', got: `(4 5 6)' instead")
+...
+```
+
+If order is not important, you can obtain the same effect as before by
+specifying it:
+
+```lisp
+(mocker-let ((foo (x y z)
+                  :ordered nil
+                  ((:input '(1 2 3) :output 4)
+                   (:input '(4 5 6) :output 10)))
+             (bar (x)
+                  ((:input '(42) :output 4))))
+  (+ (foo 4 5 6)
+     (foo 1 2 3)
+     (bar 42)))
+```
+
+
 ## Extensibility
 
 Each record definition actually builds a `mocker-record` object, that's
@@ -45,6 +78,19 @@ same output:
 Customized classes can be provided, that can even introduce a mini-language for
 describing the stub. This can be achieved by overloading
 `mocker-read-record` correctly.
+
+In case the customized record class is meant to be used in many tests, it might
+be more convenient to use a pattern like:
+
+```lisp
+(let ((mocker-mock-default-record-cls 'mocker-stub-record))
+  (mocker-let ((foo (x)
+                    ((:output 42)))
+               (bar (x y)
+                    ((:output 1))))
+    (+ (foo 12345)
+       (bar 5 14))))
+```
 
 ## Comparison to other mocking solutions
 

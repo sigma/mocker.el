@@ -244,8 +244,9 @@
                              (let* ((order (if (plist-member rest :ordered)
                                                (prog1
                                                    (plist-get rest :ordered)
-                                                 (mocker--plist-remove
-                                                  rest :ordered))
+                                                 (setq rest
+                                                       (mocker--plist-remove
+                                                        rest :ordered)))
                                              (oref-default 'mocker-mock
                                                            :ordered))))
                                (list :ordered order)))

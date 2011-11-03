@@ -170,5 +170,18 @@
        (and (foo 1) (foo 42) (foo 666))))
    :type 'mocker-mock-error))
 
+(ert-deftest mocker-let-multiple-calls-unordered ()
+  (should
+   (eq 18
+       (mocker-let ((foo (x y z)
+                         :ordered nil
+                         ((:input '(1 2 3) :output 4)
+                          (:input '(4 5 6) :output 10)))
+                    (bar (x)
+                         ((:input '(42) :output 4))))
+         (+ (foo 4 5 6)
+            (foo 1 2 3)
+            (bar 42))))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here
