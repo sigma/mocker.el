@@ -6,6 +6,8 @@ can be seen as a way to manually generate mocks.
 
 ## Usage
 
+### Basic usage
+
 Let's start with a simple example:
 
 ```lisp
@@ -21,6 +23,8 @@ Let's start with a simple example:
 
 Each mock is defined in a function-style, and is associated with a set of
 "records" that map expected inputs to desired outputs.
+
+### Call order
 
 By default, the order of definition within a mock has to be respected by the
 wrapped code, so that in this situation it would be an error to observe `(foo
@@ -58,6 +62,43 @@ specifying it:
      (bar 42)))
 ```
 
+### Counting calls
+
+In many situations it can be pretty repetitive to list all the expected calls
+to a mock. In some, the count might even be a range rather than a fixed number.
+The `:min-occur` and `:max-occur` options allow to tune that. By default, they
+are both set to 1, so that exactly 1 call is expected. As a special case,
+setting `:max-occur` to nil will accept any number of calls.
+
+```lisp
+(mocker-let ((foo (x)
+                  ((:input '(1) :output 1 :min-occur 1 :max-occur 3))))
+  (+ (foo 1) (foo 1)))
+```
+
+This example will accept between 1 and 3 calls to `(foo 1)`, and complain if
+that constraint is not fulfilled.
+
+### Flexible input/output
+
+The examples above are fine, but they suppose input and output are just
+constant exceptions. A useful addition is the ability to match arbitrary input
+and generate arbitrary output.
+
+To this end, the `:input-matcher` and `:output-generator` options can be used
+instead (actually think of `:input` and `:output` as convenience shortcuts for
+constant matcher/generator).
+
+```lisp
+(mocker-let ((foo (x)
+                  :ordered nil
+                  ((:input-matcher 'oddp :output-generator 'identity :max-occur 2)
+                   (:input-matcher 'evenp :output 0))))
+  (+ (foo 1) (foo 2) (foo 3)))
+```
+
+Both `:input-matcher` and `:output-generator` values need to be functions (or
+function symbols) accepting the same arguments as the mocked function itself.
 
 ## Extensibility
 
@@ -92,6 +133,9 @@ be more convenient to use a pattern like:
        (bar 5 14))))
 ```
 
+Also note that `mocker-stub-record` set their `:min-occur` to 0 and
+`:max-occur` to nil, if not specified otherwise.
+
 ## Comparison to other mocking solutions
 
 * el-mock.el (http://www.emacswiki.org/emacs/EmacsLispMock)
@@ -101,7 +145,9 @@ be more convenient to use a pattern like:
     is more flexible.
 
   * el-mock.el does not allow recording multiple behaviors (the same call will
-    always return the same value).
+    always return the same value). This makes it difficult to use in real
+    situation, where different call sites for the same function might have to
+    behave differently.
 
 ## Examples
 
