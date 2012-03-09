@@ -82,7 +82,7 @@ that constraint is not fulfilled.
 ### Flexible input/output
 
 The examples above are fine, but they suppose input and output are just
-constant exceptions. A useful addition is the ability to match arbitrary input
+constant expressions. A useful addition is the ability to match arbitrary input
 and generate arbitrary output.
 
 To this end, the `:input-matcher` and `:output-generator` options can be used
