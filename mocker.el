@@ -327,12 +327,11 @@ specialized mini-languages for specific record classes.
                              `(mocker-verify ,(car m)))
                          mocks)))
     `(let (,@vars)
-       (flet (,@specs)
-         ,@inits
-         (prog1
-             (progn
-               ,@body)
-           ,@verifs)))))
+       ,@inits
+       (prog1
+           (flet (,@specs)
+             ,@body)
+         ,@verifs))))
 
 (provide 'mocker)
 ;;; mocker.el ends here
