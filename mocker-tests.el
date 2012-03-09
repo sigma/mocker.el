@@ -183,5 +183,22 @@
             (foo 1 2 3)
             (bar 42))))))
 
+(ert-deftest mocker-passthrough-basic ()
+  (should
+   (not
+    (mocker-let ((ignore (x)
+                         :records ((:record-cls mocker-passthrough-record
+                                                :input '(42)))))
+      (ignore 42)))))
+
+(ert-deftest mocker-passthrough-mixed ()
+  (should
+   (mocker-let ((ignore (x)
+                        :records ((:record-cls mocker-passthrough-record
+                                               :input '(42))
+                                  (:input '(58) :output t))))
+     (or (ignore 42)
+         (ignore 58)))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here

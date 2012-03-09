@@ -51,13 +51,16 @@
 ;;; Mock object
 (defclass mocker-mock ()
   ((function :initarg :function :type symbol)
+   (orig-def :initarg :orig-def :initform nil)
    (argspec :initarg :argspec :initform nil :type list)
    (ordered :initarg :ordered :initform t)
    (records :initarg :records :initform nil :type list)))
 
 (defmethod constructor :static ((mock mocker-mock) newname &rest args)
   (let* ((obj (call-next-method))
-         (recs (oref obj :records)))
+         (recs (oref obj :records))
+         (func (oref obj :function)))
+    (oset obj :orig-def (when (fboundp func) (symbol-function func)))
     (oset obj :records nil)
     (mapc #'(lambda (r)
               (apply 'mocker-add-record obj r))
@@ -176,14 +179,12 @@
                         (mocker-get-record-expectations rec)
                         args))))
 
-;;; Mock record default object
-(defclass mocker-record (mocker-record-base)
+;;; Mock input recognizer
+(defclass mocker-input-record (mocker-record-base)
   ((input :initarg :input :initform nil :type list)
-   (output :initarg :output :initform nil)
-   (input-matcher :initarg :input-matcher :initform nil)
-   (output-generator :initarg :output-generator :initform nil)))
+   (input-matcher :initarg :input-matcher :initform nil)))
 
-(defmethod constructor :static ((rec mocker-record) newname &rest args)
+(defmethod constructor :static ((rec mocker-input-record) newname &rest args)
   (let* ((obj (call-next-method)))
     (when (or (not (slot-boundp obj :max-occur))
               (and (oref obj :max-occur)
@@ -192,13 +193,21 @@
       (oset obj :max-occur (oref obj :min-occur)))
     obj))
 
-(defmethod mocker-test-record ((rec mocker-record) args)
+(defmethod mocker-test-record ((rec mocker-input-record) args)
   (let ((matcher (oref rec :input-matcher))
         (input (oref rec :input)))
     (cond (matcher
            (apply matcher args))
           (t
            (equal input args)))))
+
+(defmethod mocker-get-record-expectations ((rec mocker-input-record))
+  (format "`%s'" (or (oref rec :input-matcher) (oref rec :input))))
+
+;;; Mock record default object
+(defclass mocker-record (mocker-input-record)
+  ((output :initarg :output :initform nil)
+   (output-generator :initarg :output-generator :initform nil)))
 
 (defmethod mocker-run-record ((rec mocker-record) args)
   (let ((generator (oref rec :output-generator))
@@ -207,9 +216,6 @@
            (apply generator args))
           (t
            output))))
-
-(defmethod mocker-get-record-expectations ((rec mocker-record))
-  (format "`%s'" (or (oref rec :input-matcher) (oref rec :input))))
 
 ;;; Mock simple stub object
 (defclass mocker-stub-record (mocker-record-base)
@@ -231,6 +237,16 @@
 
 (defmethod mocker-get-record-expectations ((rec mocker-stub-record))
   "anything")
+
+;;; Mock passthrough record
+(defclass mocker-passthrough-record (mocker-input-record)
+  ())
+
+(defmethod mocker-run-record ((rec mocker-passthrough-record) args)
+  (let* ((mock (oref rec :-mock))
+         (def (oref mock :orig-def)))
+    (when def
+      (apply def args))))
 
 ;;; Helpers
 (defun mocker-gen-mocks (mockspecs)

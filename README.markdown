@@ -106,6 +106,8 @@ Each record definition actually builds a `mocker-record` object, that's
 responsible for checking the actual behavior. By providing alternative
 implementations of those records, one can adapt the mocking to special needs.
 
+### Stubs
+
 As a quick proof of concept, an implementation of a stub is provided with the
 class `mocker-stub-record` which casualy ignores any input and always emits the
 same output:
@@ -115,6 +117,25 @@ same output:
                   ((:record-cls 'mocker-stub-record :output 42))))
   (foo 12345))
 ```
+
+### Passthrough
+
+In some occasions, you might want to mock only some calls for a function, and
+let other calls invoke the real one. This can be achieved by using the
+`mocker-passthrough-record`. In the following example, the first call to
+`ignore` uses the real implementation, while the second one is mocked to return
+`t`:
+
+```lisp
+(mocker-let ((ignore (x)
+                        :records ((:record-cls mocker-passthrough-record
+                                               :input '(42))
+                                  (:input '(58) :output t))))
+     (or (ignore 42)
+         (ignore 58)))
+```
+
+### Provide your own
 
 Customized classes can be provided, that can even introduce a mini-language for
 describing the stub. This can be achieved by overloading
