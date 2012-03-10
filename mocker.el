@@ -257,10 +257,11 @@
 (defun mocker-gen-mocks (mockspecs)
   "helper to generate mocks from the input of `mocker-let'"
   (mapcar #'(lambda (m)
-              (let ((func (car m))
-                    (argspec (cadr m))
-                    (rest (cddr m)))
-                (list (make-symbol (concat (symbol-name func) "--mock"))
+              (let* ((func (car m))
+                     (argspec (cadr m))
+                     (rest (cddr m))
+                     (sym (make-symbol (concat (symbol-name func) "--mock"))))
+                (list sym
                       (apply 'make-instance 'mocker-mock
                              :function func
                              :argspec argspec
