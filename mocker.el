@@ -85,15 +85,20 @@
                                 " with input `%s'")
                         (oref mock :function) args))))
 
+(defvar mocker-inhibit nil)
+
 (defmethod mocker-run ((mock mocker-mock) &rest args)
-  (let ((rec (mocker-find-active-record mock args))
-        (ordered (oref mock :ordered)))
-    (cond ((null rec)
-           (mocker-fail-mock mock args))
-          ((or (not ordered) (mocker-test-record rec args))
-           (mocker-run-record rec args))
-          (t
-           (mocker-fail-record rec args)))))
+  (if (not mocker-inhibit)
+      (let* ((mocker-inhibit t)
+             (rec (mocker-find-active-record mock args))
+             (ordered (oref mock :ordered)))
+        (cond ((null rec)
+               (mocker-fail-mock mock args))
+              ((or (not ordered) (mocker-test-record rec args))
+               (mocker-run-record rec args))
+              (t
+               (mocker-fail-record rec args))))
+    (apply (oref :orig-def mock) args)))
 
 (defmethod mocker-find-active-record ((mock mocker-mock) args)
   (flet ((first-match (pred seq)
