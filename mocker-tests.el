@@ -200,5 +200,27 @@
      (or (ignore 42)
          (ignore 58)))))
 
+(ert-deftest mocker-passthrough-mixed-error ()
+  (should-error
+   (mocker-let ((ignore (x)
+                        :records ((:record-cls mocker-passthrough-record
+                                               :input '(42))
+                                  (:input '(58) :output t))))
+     (or (ignore 42)
+         (ignore 42)))
+   :type 'mocker-record-error))
+
+(ert-deftest mocker-passthrough-multiple ()
+  (should
+   (mocker-let ((ignore (x)
+                        ((:input-matcher (lambda (x) t)
+                                         :output t :max-occur 2)
+                         (:record-cls mocker-passthrough-record
+                                      :input '(42) :max-occur nil))))
+     (and (ignore 1)
+          (ignore 2)
+          (not (or
+                (ignore 42) (ignore 42) (ignore 42) (ignore 42)))))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here
