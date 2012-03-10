@@ -88,16 +88,14 @@
   (should
    (eq t
        (mocker-let ((foo (x)
-                         :records ((:input-matcher (lambda (x) (evenp x))
-                                                   :output t))))
+                         :records ((:input-matcher 'integerp :output t))))
          (foo 4)))))
 
 (ert-deftest mocker-let-single-input-matcher-invalid ()
   (should-error
    (mocker-let ((foo (x)
-                     :records ((:input-matcher (lambda (x) (evenp x))
-                                               :output t))))
-     (foo 5))
+                     :records ((:input-matcher 'integerp :output t))))
+     (foo t))
    :type 'mocker-record-error))
 
 (ert-deftest mocker-let-multiple-output-generator ()
