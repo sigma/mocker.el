@@ -98,7 +98,7 @@
                (mocker-run-record rec args))
               (t
                (mocker-fail-record rec args))))
-    (apply (oref :orig-def mock) args)))
+    (apply (oref mock :orig-def) args)))
 
 (defmethod mocker-find-active-record ((mock mocker-mock) args)
   (flet ((first-match (pred seq)

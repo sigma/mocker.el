@@ -220,5 +220,22 @@
           (not (or
                 (ignore 42) (ignore 42) (ignore 42) (ignore 42)))))))
 
+(ert-deftest mocker-inhibit-mock-not-consumed ()
+  (should-error
+   (let ((mocker-inhibit t))
+     (mocker-let ((ignore (x)
+                          ((:input '(42) :output t))))
+       (ignore 42)))
+   :type 'mocker-record-error))
+
+(ert-deftest mocker-inhibit-mocking ()
+  (should
+   (not
+    (mocker-let ((ignore (x)
+                         ((:input '(42) :output t))))
+      (and (ignore 42)
+           (let ((mocker-inhibit t))
+             (ignore 42)))))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here
