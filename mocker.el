@@ -335,8 +335,8 @@ specialized mini-languages for specific record classes.
     `(let (,@vars)
        ,@inits
        (prog1
-           (flet (,@specs)
-             ,@body)
+           ,(macroexpand `(flet (,@specs)
+                           ,@body))
          ,@verifs))))
 
 (provide 'mocker)

@@ -26,6 +26,7 @@
 
 ;;; Code:
 
+(require 'cl)
 (require 'mocker)
 
 (eval-when-compile
