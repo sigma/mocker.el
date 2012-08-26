@@ -69,6 +69,7 @@ to a mock. In some, the count might even be a range rather than a fixed number.
 The `:min-occur` and `:max-occur` options allow to tune that. By default, they
 are both set to 1, so that exactly 1 call is expected. As a special case,
 setting `:max-occur` to nil will accept any number of calls.
+An `:occur` shorthand is also provided, to expect an exact number of calls.
 
 ```lisp
 (mocker-let ((foo (x)
@@ -78,6 +79,9 @@ setting `:max-occur` to nil will accept any number of calls.
 
 This example will accept between 1 and 3 calls to `(foo 1)`, and complain if
 that constraint is not fulfilled.
+
+Note the applied algorithm is greedy, so that as many calls as possible will
+count as part of the earliest constraints.
 
 ### Flexible input/output
 
