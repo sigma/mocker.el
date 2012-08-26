@@ -76,7 +76,8 @@
                                 args (mocker-read-record cls
                                                          (mocker--plist-remove
                                                           args :record-cls))))
-                        (apply 'make-instance cls :-mock mock args))
+                        (apply 'make-instance cls :-mock mock
+                               :-sym (make-symbol "unique") args))
                       t))
 
 (defmethod mocker-fail-mock ((mock mocker-mock) args)
@@ -150,7 +151,9 @@
    (-occurrences :initarg :-occurrences :initform 0 :type number
                  :protection :protected)
    (-mock :initarg :-mock)
-   (-active :initarg :-active :initform t :protection :protected)))
+   (-active :initarg :-active :initform t :protection :protected)
+   (-sym :initarg :-sym)))
+
 (defmethod constructor :static ((rec mocker-record-base) newname &rest args)
   (let* ((obj (call-next-method))
          (occur (oref obj :occur)))

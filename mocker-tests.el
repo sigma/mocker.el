@@ -147,6 +147,16 @@
                                     :output-generator (lambda (x) (* 2 x))
                                     :occur 2))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
+
+(ert-deftest mocker-let-multiple-calls-multiple-same-records ()
+  (should
+   (eq 8
+       (mocker-let ((foo (x)
+                         :records ((:input '(2)
+                                    :output-generator (function identity)
+                                    :max-occur 2)
+                                   (:input '(2)
+                                    :output-generator (function identity)
                                     :max-occur 2))))
          (+ (foo 2) (foo 2) (foo 2) (foo 2))))))
 
