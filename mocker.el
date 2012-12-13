@@ -4,7 +4,7 @@
 
 ;; Author: Yann Hodique <yann.hodique@gmail.com>
 ;; Keywords: lisp, testing
-;; Version: 0.2
+;; Version: 0.2.1
 ;; Package-Requires: ((eieio "1.3"))
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -326,6 +326,8 @@ specialized mini-languages for specific record classes.
                             (mock (cadr m))
                             (func (oref mock :function))
                             (spec (oref mock :argspec))
+                            (call (or (and (member '&rest spec) 'apply)
+                                      'funcall))
                             (args (loop for el in spec
                                         if (or (not (symbolp el))
                                                (not (equal
@@ -334,7 +336,7 @@ specialized mini-languages for specific record classes.
                                         collect el)))
                        (list func
                              spec
-                             `(mocker-run ,mock-sym ,@args))))
+                             `(,call #'mocker-run ,mock-sym ,@args))))
                  mocks))
          (inits (mapcar #'(lambda (m)
                             (cons 'progn

@@ -268,5 +268,10 @@
            (let ((mocker-inhibit t))
              (ignore 42)))))))
 
+(ert-deftest mocker-rest-args ()
+  (should
+   (mocker-let ((f (a b &rest args) ((:input '(1 2 3 4) :output t))))
+     (f 1 2 3 4))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here
