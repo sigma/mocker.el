@@ -41,6 +41,11 @@
 (put 'mocker-record-error 'error-conditions '(mocker-record-error error))
 (put 'mocker-record-error 'error-message "Mocker record error")
 
+(defmacro mocker-flet (specs &rest body)
+  (declare (indent 1) (debug t))
+  (let ((flet (if (fboundp 'cl-flet) 'cl-flet 'flet)))
+    `(,flet ,specs ,@body)))
+
 (defun mocker--plist-remove (plist key)
   ;; courtesy of pjb
   (if (eq (car plist) key) (cdr (cdr plist))
@@ -102,11 +107,11 @@
     (apply (oref mock :orig-def) args)))
 
 (defmethod mocker-find-active-record ((mock mocker-mock) args)
-  (flet ((first-match (pred seq)
-                      (let ((x nil))
-                        (while (and seq
-                                    (not (setq x (funcall pred (pop seq))))))
-                        x)))
+  (mocker-flet ((first-match (pred seq)
+                             (let ((x nil))
+                               (while (and seq
+                                           (not (setq x (funcall pred (pop seq))))))
+                               x)))
     (let* ((ordered (oref mock :ordered))
            rec)
       (if ordered
@@ -351,8 +356,8 @@ specialized mini-languages for specific record classes.
     `(let (,@vars)
        ,@inits
        (prog1
-           ,(macroexpand `(flet (,@specs)
-                           ,@body))
+           ,(macroexpand `(mocker-flet (,@specs)
+                            ,@body))
          ,@verifs))))
 
 (provide 'mocker)
