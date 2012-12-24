@@ -4,8 +4,8 @@
 
 ;; Author: Yann Hodique <yann.hodique@gmail.com>
 ;; Keywords: lisp, testing
-;; Version: 0.2.1
-;; Package-Requires: ((eieio "1.3"))
+;; Version: 0.2.2
+;; Package-Requires: ((eieio "1.3") (el-x "0.2"))
 
 ;; This file is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -33,6 +33,12 @@
 
 (require 'eieio)
 
+;; use dflet from el-x if available
+(if (require 'dflet nil t)
+    (defalias 'mocker-flet 'dflet)
+  ;; fallback to regular flet, hoping it's still there
+  (defalias 'mocker-flet 'flet))
+
 (defvar mocker-mock-default-record-cls 'mocker-record)
 
 (put 'mocker-mock-error 'error-conditions '(mocker-mock-error error))
@@ -40,11 +46,6 @@
 
 (put 'mocker-record-error 'error-conditions '(mocker-record-error error))
 (put 'mocker-record-error 'error-message "Mocker record error")
-
-(defmacro mocker-flet (specs &rest body)
-  (declare (indent 1) (debug t))
-  (let ((flet (if (fboundp 'cl-flet) 'cl-flet 'flet)))
-    `(,flet ,specs ,@body)))
 
 (defun mocker--plist-remove (plist key)
   ;; courtesy of pjb
