@@ -33,11 +33,12 @@
 
 (require 'eieio)
 
-;; use dflet from el-x if available
-(if (require 'dflet nil t)
-    (defalias 'mocker-flet 'dflet)
-  ;; fallback to regular flet, hoping it's still there
-  (defalias 'mocker-flet 'flet))
+(eval-and-compile
+  ;; use dflet from el-x if available
+  (if (require 'dflet nil t)
+      (defalias 'mocker-flet 'dflet)
+    ;; fallback to regular flet, hoping it's still there
+    (defalias 'mocker-flet 'flet)))
 
 (defvar mocker-mock-default-record-cls 'mocker-record)
 
