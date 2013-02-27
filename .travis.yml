@@ -21,6 +21,6 @@ before_install:
   - pip install --use-mirrors virtualenv-emacs
   - virtualenv_install_emacs --with-emacs=`which "$EMACS"` --marmalade
   - elpa-get eieio el-x
+  - emacs --version
 script:
-  emacs --version
   make test
