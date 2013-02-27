@@ -22,4 +22,5 @@ before_install:
   - virtualenv_install_emacs --with-emacs=`which "$EMACS"` --marmalade
   - elpa-get eieio el-x
 script:
+  emacs --version
   make test
