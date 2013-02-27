@@ -18,7 +18,7 @@ before_install:
       sudo apt-get install -qq
           emacs-snapshot-el emacs-snapshot;
     fi
-  - pip install --user-mirrors virtualenv-emacs
+  - pip install --use-mirrors virtualenv-emacs
   - virtualenv_install_emacs --with-emacs=`which "$EMACS"` --marmalade
   - elpa-get eieio el-x
 script:
