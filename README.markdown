@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/sigma/mocker.png?branch=master)](https://travis-ci.org/sigma/mocker)
+[![Build Status](https://travis-ci.org/sigma/mocker.el.png?branch=master)](https://travis-ci.org/sigma/mocker.el)
 
 Mocker.el is a mocking framework for Emacs lisp.
 
