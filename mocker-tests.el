@@ -26,10 +26,12 @@
 
 ;;; Code:
 
-(require 'cl)
+(eval-when-compile
+  (require 'cl))
+
 (require 'mocker)
 
-(eval-when-compile
+(eval-and-compile
   (when (null (ignore-errors (require 'ert)))
     (defmacro* ert-deftest (name () &body docstring-keys-and-body)
       (message "Skipping tests, ERT is not available"))))
