@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/sigma/mocker.png?branch=master)](https://travis-ci.org/sigma/mocker)
+
 Mocker.el is a mocking framework for Emacs lisp.
 
 Its single entry point, `mocker-let` provides an `let` like interface to
