@@ -23,4 +23,4 @@ before_install:
   - elpa-get eieio el-x
   - emacs --version
 script:
-  make test
+  make clean test
