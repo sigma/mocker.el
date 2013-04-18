@@ -4,7 +4,7 @@
 
 ;; Author: Yann Hodique <yann.hodique@gmail.com>
 ;; Keywords: lisp, testing
-;; Version: 0.2.4
+;; Version: 0.2.5
 ;; Package-Requires: ((eieio "1.3") (el-x "0.2.1"))
 
 ;; This file is free software; you can redistribute it and/or modify
@@ -109,15 +109,16 @@
     (apply (oref mock :orig-def) args)))
 
 (defmethod mocker-find-active-record ((mock mocker-mock) args)
-  (mocker-flet ((first-match (pred seq)
-                             (let ((x nil))
-                               (while (and seq
-                                           (not (setq x (funcall pred (pop seq))))))
-                               x)))
+  (let ((first-match (lambda (pred seq)
+                       (let ((x nil))
+                         (while (and seq
+                                     (not (setq x (funcall pred (pop seq))))))
+                         x))))
     (let* ((ordered (oref mock :ordered))
            rec)
       (if ordered
-          (setq rec (first-match
+          (setq rec (funcall
+                     first-match
                      #'(lambda (r)
                          (when (oref r :-active)
                            (if (mocker-test-record r args)
@@ -126,7 +127,8 @@
                                  r)
                              (mocker-skip-record r args))))
                      (oref mock :records)))
-        (setq rec (first-match
+        (setq rec (funcall
+                   first-match
                    #'(lambda (r)
                        (and
                         (oref r :-active)
