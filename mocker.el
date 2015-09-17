@@ -4,7 +4,7 @@
 
 ;; Author: Yann Hodique <yann.hodique@gmail.com>
 ;; Keywords: lisp, testing
-;; Version: 0.3.0
+;; Version: 0.3.1
 ;; Package-Requires: ((eieio "1.3") (el-x "0.2.4"))
 
 ;; This file is free software; you can redistribute it and/or modify
