@@ -1,20 +1,25 @@
-PROJECT=mocker
-EMACS=emacs
+EMACS ?= emacs
+CASK ?= cask
 
-ELS=$(wildcard *.el)
-ELCS=$(ELS:.el=.elc)
+test: unit-tests
 
-EFLAGS=
-BATCH=$(EMACS) $(EFLAGS) -batch -q -no-site-file -eval \
-  "(setq load-path (cons (expand-file-name \".\") load-path))"
+unit-tests: elpa
+	${CASK} exec ert-runner
 
-%.elc: %.el
-	$(BATCH) --eval '(byte-compile-file "$<")'
+elpa:
+	mkdir -p elpa
+	${CASK} install 2> elpa/install.log
 
-all: $(ELCS)
+clean-elpa:
+	rm -rf elpa
 
-clean:
-	rm -f $(ELCS)
+clean-elc:
+	rm -f *.elc test/*.elc
 
-test: all
-	$(BATCH) -l $(PROJECT)-tests.el -f ert-run-tests-batch-and-exit
+clean: clean-elpa clean-elc
+
+print-deps:
+	${EMACS} --version
+	@echo CASK=${CASK}
+
+travis-ci: print-deps test
