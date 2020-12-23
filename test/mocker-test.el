@@ -26,15 +26,8 @@
 
 ;;; Code:
 
-(eval-when-compile
-  (require 'cl))
-
+(require 'cl-lib)
 (require 'mocker)
-
-(eval-and-compile
-  (when (null (ignore-errors (require 'ert)))
-    (defmacro* ert-deftest (name () &body docstring-keys-and-body)
-      (message "Skipping tests, ERT is not available"))))
 
 (ert-deftest mocker-let-basic ()
   (should
