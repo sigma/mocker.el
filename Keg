@@ -1,0 +1,7 @@
+;; Keg
+
+(source gnu melpa)
+
+(package
+  (mocker
+   (recipe . (mocker :fetcher github :repo "sigma/mocker.el"))))
