@@ -268,5 +268,28 @@
    (mocker-let ((f (a b &rest args) ((:input '(1 2 3 4) :output t))))
      (f 1 2 3 4))))
 
+;;; non-regression tests for (:occur 0)
+
+(defun mocker-test-call-foo () (foo))
+
+(defun mocker-test-do-not-call-foo () nil)
+
+(ert-deftest mocker-forbidden-call ()
+  (should-error
+   (mocker-let
+       ((foo () ((:occur 0))))
+     (mocker-test-call-foo))))
+
+(ert-deftest mocker-no-forbidden-call ()
+  (mocker-let
+      ((foo () ((:occur 0))))
+    (mocker-test-do-not-call-foo)))
+
+(ert-deftest mocker-forbidden-full-form ()
+  (should-error
+   (mocker-let
+       ((foo () ((:min-occur 0 :max-occur 0))))
+     (mocker-test-call-foo))))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here
