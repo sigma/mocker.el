@@ -3,7 +3,7 @@
 Mocker.el is a mocking framework for Emacs lisp.
 
 Its single entry point, `mocker-let` provides an `let` like interface to
-defining mock objects. Actually, `mocker-let` is a wrapper around `flet`, which
+defining mock objects. Actually, `mocker-let` is a wrapper around `cl-letf`, which
 can be seen as a way to manually generate mocks.
 
 ## Usage
