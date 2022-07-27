@@ -1,4 +1,4 @@
-;;; mocker-tests.el --- tests for mocker.el
+;;; mocker-tests.el --- tests for mocker.el -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2011  Free Software Foundation, Inc.
 
