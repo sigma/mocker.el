@@ -291,5 +291,10 @@
        ((foo () ((:min-occur 0 :max-occur 0))))
      (mocker-test-call-foo))))
 
+(ert-deftest trampoline-demo-with-warning ()
+  (mocker-let ((file-exists-p (file) ((:input '("/some/file.txt") :output t))))
+    (should (file-exists-p "/some/file.txt")))
+  (should-not (get-buffer "*Warnings*")))
+
 (provide 'mocker-tests)
 ;;; mocker-tests.el ends here

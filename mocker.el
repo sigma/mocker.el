@@ -358,9 +358,10 @@ specialized mini-languages for specific record classes.
                          mocks)))
     `(let (,@vars)
        ,@inits
-       (prog1
-           ,(macroexpand `(cl-letf (,@specs) ,@body))
-         ,@verifs))))
+       (let ((native-comp-enable-subr-trampolines nil))
+         (prog1
+             ,(macroexpand `(cl-letf (,@specs) ,@body))
+           ,@verifs)))))
 
 (provide 'mocker)
 ;;; mocker.el ends here
